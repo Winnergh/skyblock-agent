@@ -1,11 +1,25 @@
 const statusEl = document.getElementById("status");
 const contentEl = document.getElementById("content");
 const emptyEl = document.getElementById("empty");
+const marketEmptyEl = document.getElementById("market-empty");
+const marketContentEl = document.getElementById("market-content");
 const form = document.getElementById("search-form");
+const marketForm = document.getElementById("market-form");
 const searchBtn = document.getElementById("search-btn");
+const marketBtn = document.getElementById("market-btn");
 const usernameInput = document.getElementById("username");
 const profileInput = document.getElementById("profile-name");
 const recentPlayersEl = document.getElementById("recent-players");
+const profileTopbar = document.getElementById("profile-topbar");
+const marketTopbar = document.getElementById("market-topbar");
+const marketTypeEl = document.getElementById("market-type");
+const marketQueryEl = document.getElementById("market-query");
+const binOnlyEl = document.getElementById("bin-only");
+const binOnlyWrap = document.getElementById("bin-only-wrap");
+const auctionPageEl = document.getElementById("auction-page");
+const navItems = document.querySelectorAll(".nav-item[data-view]");
+
+let activeView = "profile";
 
 const pillClass = {
   ok: "pill-ok",
@@ -22,6 +36,127 @@ function showStatus(message, isError = false) {
 
 function hideStatus() {
   statusEl.classList.add("hidden");
+}
+
+function formatCoins(value) {
+  if (value === null || value === undefined) return "—";
+  return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function formatTimestamp(ms) {
+  if (!ms) return "—";
+  return new Date(Number(ms)).toLocaleString();
+}
+
+function switchView(view) {
+  activeView = view;
+  navItems.forEach((item) => {
+    item.classList.toggle("active", item.dataset.view === view);
+  });
+
+  const isProfile = view === "profile";
+  profileTopbar.classList.toggle("hidden", !isProfile);
+  marketTopbar.classList.toggle("hidden", isProfile);
+
+  if (isProfile) {
+    marketContentEl.classList.add("hidden");
+    marketEmptyEl.classList.add("hidden");
+    if (contentEl.classList.contains("hidden")) {
+      emptyEl.classList.remove("hidden");
+    }
+  } else {
+    contentEl.classList.add("hidden");
+    emptyEl.classList.add("hidden");
+    hideStatus();
+    if (marketContentEl.classList.contains("hidden")) {
+      marketEmptyEl.classList.remove("hidden");
+    }
+  }
+
+  const isAuctions = marketTypeEl.value === "auctions";
+  binOnlyWrap.classList.toggle("hidden", !isAuctions);
+  auctionPageEl.classList.toggle("hidden", !isAuctions);
+}
+
+function renderBazaarTable(products) {
+  const table = document.getElementById("market-table");
+  if (!products.length) {
+    table.innerHTML = `<div class="muted">No products matched.</div>`;
+    return;
+  }
+
+  const rows = products.map((product) => `
+    <div class="market-row">
+      <span class="market-primary">${product.product_id}</span>
+      <span>${formatCoins(product.buy_price)}</span>
+      <span>${formatCoins(product.sell_price)}</span>
+      <span>${formatCoins(product.spread)}</span>
+      <span class="muted">${formatNumber(product.buy_volume)} / ${formatNumber(product.sell_volume)}</span>
+    </div>
+  `).join("");
+
+  table.innerHTML = `
+    <div class="market-row market-head">
+      <span>Product</span><span>Buy</span><span>Sell</span><span>Spread</span><span>Vol buy/sell</span>
+    </div>
+    ${rows}
+  `;
+}
+
+function renderAuctionsTable(auctions) {
+  const table = document.getElementById("market-table");
+  if (!auctions.length) {
+    table.innerHTML = `<div class="muted">No auctions matched on this page.</div>`;
+    return;
+  }
+
+  const rows = auctions.map((auction) => `
+    <div class="market-row">
+      <span class="market-primary">${auction.item_name}</span>
+      <span>${auction.bin ? "BIN" : "Bid"}</span>
+      <span>${formatNumber(auction.price)}</span>
+      <span>${auction.tier || "—"}</span>
+      <span class="muted">${auction.category || "—"}</span>
+    </div>
+  `).join("");
+
+  table.innerHTML = `
+    <div class="market-row market-head">
+      <span>Item</span><span>Type</span><span>Price</span><span>Tier</span><span>Category</span>
+    </div>
+    ${rows}
+  `;
+}
+
+function renderMarket(data, type) {
+  document.getElementById("market-source").textContent = type === "bazaar" ? "Bazaar" : "Auction House";
+  document.getElementById("market-title").textContent =
+    type === "bazaar" ? "Live Bazaar prices" : `Auctions page ${(data.page ?? 0) + 1}`;
+
+  if (type === "bazaar") {
+    document.getElementById("market-meta").textContent =
+      data.query ? `Filter: ${data.query}` : "All Bazaar products";
+    document.getElementById("market-matched").textContent = formatNumber(data.matched_products);
+    document.getElementById("market-total").textContent = formatNumber(data.total_products);
+    document.getElementById("market-updated").textContent = formatTimestamp(data.last_updated);
+    document.getElementById("market-table-title").textContent = "Bazaar products";
+    renderBazaarTable(data.products || []);
+  } else {
+    document.getElementById("market-meta").textContent =
+      `${formatNumber(data.total_auctions)} active auctions · page ${(data.page ?? 0) + 1} of ${data.total_pages ?? 1}`;
+    document.getElementById("market-matched").textContent = formatNumber(data.matched_auctions);
+    document.getElementById("market-total").textContent = formatNumber(data.total_auctions);
+    document.getElementById("market-updated").textContent = formatTimestamp(data.last_updated);
+    document.getElementById("market-table-title").textContent = "Auction listings";
+    renderAuctionsTable(data.auctions || []);
+  }
+
+  const saved = document.getElementById("market-saved");
+  saved.textContent = data.raw_path ? "Saved locally" : "Not saved";
+  saved.className = `pill ${data.raw_path ? "pill-ok" : "pill-muted"}`;
+
+  marketEmptyEl.classList.add("hidden");
+  marketContentEl.classList.remove("hidden");
 }
 
 function formatNumber(value) {
@@ -206,5 +341,49 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+marketTypeEl.addEventListener("change", () => {
+  const isAuctions = marketTypeEl.value === "auctions";
+  binOnlyWrap.classList.toggle("hidden", !isAuctions);
+  auctionPageEl.classList.toggle("hidden", !isAuctions);
+});
+
+navItems.forEach((item) => {
+  item.addEventListener("click", () => switchView(item.dataset.view));
+});
+
+marketForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  hideStatus();
+  marketBtn.disabled = true;
+
+  const type = marketTypeEl.value;
+  const query = marketQueryEl.value.trim();
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  params.set("limit", "50");
+
+  const endpoint = type === "bazaar" ? "/api/bazaar" : "/api/auctions";
+  if (type === "auctions") {
+    params.set("page", String(Math.max(0, Number(auctionPageEl.value) || 0)));
+    if (binOnlyEl.checked) params.set("bin_only", "true");
+  }
+
+  try {
+    showStatus(`Fetching ${type === "bazaar" ? "Bazaar" : "Auction House"} data…`);
+    const res = await fetch(`${endpoint}?${params}`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || "Request failed");
+    }
+    hideStatus();
+    renderMarket(data, type);
+  } catch (error) {
+    showStatus(error.message || "Failed to fetch market data.", true);
+  } finally {
+    marketBtn.disabled = false;
+  }
+});
+
 loadHealth();
 loadRecentPlayers();
+switchView("profile");

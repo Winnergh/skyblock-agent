@@ -1,0 +1,38 @@
+{
+  "success": true,
+  "lastUpdated": 1590854517470,
+  "products": {
+    "ENCHANTED_DIAMOND": {
+      "product_id": "ENCHANTED_DIAMOND",
+      "sell_summary": [],
+      "buy_summary": [],
+      "quick_status": {
+        "productId": "ENCHANTED_DIAMOND",
+        "sellPrice": 1200.5,
+        "sellVolume": 5000,
+        "sellMovingWeek": 120000,
+        "sellOrders": 12,
+        "buyPrice": 1100.0,
+        "buyVolume": 4800,
+        "buyMovingWeek": 115000,
+        "buyOrders": 10
+      }
+    },
+    "CORRUPTED_BAIT": {
+      "product_id": "CORRUPTED_BAIT",
+      "sell_summary": [],
+      "buy_summary": [],
+      "quick_status": {
+        "productId": "CORRUPTED_BAIT",
+        "sellPrice": 9.3,
+        "sellVolume": 162012,
+        "sellMovingWeek": 348159,
+        "sellOrders": 4,
+        "buyPrice": 149.99,
+        "buyVolume": 347571,
+        "buyMovingWeek": 393954,
+        "buyOrders": 83
+      }
+    }
+  }
+}

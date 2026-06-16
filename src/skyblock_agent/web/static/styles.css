@@ -367,6 +367,63 @@ h1, h2 {
   border: 1px solid var(--border);
 }
 
+.market-icon {
+  background: linear-gradient(135deg, rgba(78,201,176,0.25), rgba(55,148,255,0.25));
+}
+
+.market-bar select,
+.market-bar .page-input {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.market-bar .page-input {
+  width: 72px;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.market-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.market-row {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, minmax(80px, 1fr));
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 13px;
+}
+
+.market-row.market-head {
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.market-primary {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
 .hidden { display: none !important; }
 
 @media (max-width: 980px) {

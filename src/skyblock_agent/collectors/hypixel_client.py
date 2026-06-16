@@ -88,6 +88,27 @@ class HypixelClient:
     def get_skyblock_profile(self, profile_id: str) -> dict[str, Any]:
         return self.get("v2/skyblock/profile", {"profile": profile_id})
 
+    def get_bazaar(self) -> dict[str, Any]:
+        return self.get("v2/skyblock/bazaar")
+
+    def get_auctions(self, page: int = 0) -> dict[str, Any]:
+        return self.get("v2/skyblock/auctions", {"page": str(page)})
+
+    def get_auction(self, *, uuid: str | None = None, player: str | None = None, profile: str | None = None) -> dict[str, Any]:
+        params: dict[str, str] = {}
+        if uuid:
+            params["uuid"] = uuid
+        elif player:
+            params["player"] = player
+        elif profile:
+            params["profile"] = profile
+        else:
+            raise ValueError("One of uuid, player, or profile is required")
+        return self.get("v2/skyblock/auction", params)
+
+    def get_auctions_ended(self) -> dict[str, Any]:
+        return self.get("v2/skyblock/auctions_ended")
+
     def close(self) -> None:
         self._session.close()
 

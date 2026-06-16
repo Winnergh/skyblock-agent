@@ -13,12 +13,12 @@
         <div class="brand-mark"></div>
         <div>
           <div class="brand-title">Skyblock Agent</div>
-          <div class="brand-sub">Profile viewer</div>
+          <div class="brand-sub">Profile & market data</div>
         </div>
       </div>
       <nav class="nav">
-        <button class="nav-item active" type="button">Profile</button>
-        <button class="nav-item disabled" type="button" disabled>Resources</button>
+        <button class="nav-item active" type="button" data-view="profile">Profile</button>
+        <button class="nav-item" type="button" data-view="market">Market</button>
         <button class="nav-item disabled" type="button" disabled>Wiki</button>
       </nav>
       <div class="sidebar-section">
@@ -31,11 +31,27 @@
     </aside>
 
     <main class="main">
-      <header class="topbar">
+      <header class="topbar" id="profile-topbar">
         <form id="search-form" class="search-bar">
           <input id="username" type="text" placeholder="Minecraft username" autocomplete="off" />
           <input id="profile-name" type="text" placeholder="Profile (optional)" autocomplete="off" />
           <button type="submit" id="search-btn">Lookup</button>
+        </form>
+      </header>
+
+      <header class="topbar hidden" id="market-topbar">
+        <form id="market-form" class="search-bar market-bar">
+          <select id="market-type">
+            <option value="bazaar">Bazaar</option>
+            <option value="auctions">Auction House</option>
+          </select>
+          <input id="market-query" type="text" placeholder="Search product or item name" autocomplete="off" />
+          <label class="checkbox-label" id="bin-only-wrap">
+            <input id="bin-only" type="checkbox" />
+            BIN only
+          </label>
+          <input id="auction-page" type="number" min="0" value="0" class="page-input" title="Auction page" />
+          <button type="submit" id="market-btn">Fetch</button>
         </form>
       </header>
 
@@ -102,6 +118,44 @@
         <div class="empty-icon"></div>
         <h2>Look up a SkyBlock profile</h2>
         <p class="muted">Enter a username to fetch Hypixel API data and verify field recognition.</p>
+      </section>
+
+      <section id="market-empty" class="empty-state hidden">
+        <div class="empty-icon market-icon"></div>
+        <h2>Bazaar & Auction House</h2>
+        <p class="muted">Fetch live prices from Hypixel API. Bazaar returns all products; auctions are paginated.</p>
+      </section>
+
+      <section id="market-content" class="content hidden">
+        <div class="hero card">
+          <div>
+            <div class="eyebrow" id="market-source">Market</div>
+            <h1 id="market-title">—</h1>
+            <div id="market-meta" class="muted"></div>
+          </div>
+          <div class="hero-stats">
+            <div class="stat">
+              <div class="stat-label">Matched</div>
+              <div id="market-matched" class="stat-value">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Total</div>
+              <div id="market-total" class="stat-value">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Updated</div>
+              <div id="market-updated" class="stat-value">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 id="market-table-title">Prices</h2>
+            <span id="market-saved" class="pill pill-muted">—</span>
+          </div>
+          <div id="market-table" class="market-table"></div>
+        </div>
       </section>
     </main>
   </div>

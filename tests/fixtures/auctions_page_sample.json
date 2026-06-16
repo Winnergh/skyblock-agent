@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "page": 0,
+  "totalPages": 2,
+  "totalAuctions": 1500,
+  "lastUpdated": 1571065561345,
+  "auctions": [
+    {
+      "uuid": "409a1e0f261a49849493278d6cd9305a",
+      "item_name": "Aspect of the Dragons",
+      "tier": "LEGENDARY",
+      "category": "weapon",
+      "starting_bid": 5000000,
+      "highest_bid_amount": 0,
+      "bin": true,
+      "end": 1573761102637,
+      "item_lore": "§6§lLEGENDARY"
+    },
+    {
+      "uuid": "509a1e0f261a49849493278d6cd9305b",
+      "item_name": "Enchanted Diamond",
+      "tier": "UNCOMMON",
+      "category": "blocks",
+      "starting_bid": 1000,
+      "highest_bid_amount": 2500,
+      "bin": false,
+      "end": 1573761202637,
+      "item_lore": "§a§lUNCOMMON"
+    }
+  ]
+}

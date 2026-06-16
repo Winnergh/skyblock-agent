@@ -7,8 +7,14 @@ import json
 import sys
 
 from skyblock_agent.collectors.hypixel_client import HypixelApiError
+from skyblock_agent.collectors.market_collector import MarketCollector
 from skyblock_agent.collectors.player_lookup import PlayerLookupService
-from skyblock_agent.serializers import build_lookup_payload, profile_result_to_dict
+from skyblock_agent.serializers import (
+    build_auctions_payload,
+    build_bazaar_payload,
+    build_lookup_payload,
+    profile_result_to_dict,
+)
 from skyblock_agent.storage.player_index import list_players
 from skyblock_agent.validation.api_recognizer import recognize_player_result
 
@@ -164,6 +170,115 @@ def cmd_gui(args: argparse.Namespace) -> int:
     return 0
 
 
+def _format_bazaar(snapshot, *, query: str = "", limit: int = 20) -> str:
+    products = snapshot.products[:limit]
+    lines = [
+        f"Bazaar snapshot ({snapshot.total_products} products)",
+        f"Last updated: {snapshot.last_updated}",
+    ]
+    if query:
+        lines.append(f"Filter: {query!r} ({len(snapshot.products)} matches)")
+    if snapshot.raw_path:
+        lines.append(f"Saved: {snapshot.raw_path}")
+    lines.append("")
+    if not products:
+        lines.append("No products matched.")
+        return "\n".join(lines)
+
+    lines.append(f"{'Product':<28} {'Buy':>10} {'Sell':>10} {'Spread':>10}")
+    for product in products:
+        lines.append(
+            f"{product.product_id:<28} "
+            f"{product.buy_price:>10.2f} "
+            f"{product.sell_price:>10.2f} "
+            f"{product.spread:>10.2f}"
+        )
+    if len(snapshot.products) > limit:
+        lines.append(f"... and {len(snapshot.products) - limit} more")
+    return "\n".join(lines)
+
+
+def _format_auctions(page, *, query: str = "", bin_only: bool = False, limit: int = 20) -> str:
+    auctions = page.auctions[:limit]
+    lines = [
+        f"Auction House page {page.page + 1}/{page.total_pages} "
+        f"({page.total_auctions:,} active auctions)",
+        f"Last updated: {page.last_updated}",
+    ]
+    if query:
+        lines.append(f"Filter: {query!r}")
+    if bin_only:
+        lines.append("BIN only: yes")
+    lines.append(f"Matches on this page: {len(page.auctions)}")
+    if page.raw_path:
+        lines.append(f"Saved: {page.raw_path}")
+    lines.append("")
+    if not auctions:
+        lines.append("No auctions matched on this page.")
+        return "\n".join(lines)
+
+    lines.append(f"{'Item':<32} {'Type':>4} {'Price':>12} {'Tier':<10}")
+    for auction in auctions:
+        kind = "BIN" if auction.bin else "Bid"
+        lines.append(
+            f"{auction.item_name[:32]:<32} {kind:>4} {auction.price:>12,} {auction.tier:<10}"
+        )
+    if len(page.auctions) > limit:
+        lines.append(f"... and {len(page.auctions) - limit} more on this page")
+    return "\n".join(lines)
+
+
+def cmd_bazaar(args: argparse.Namespace) -> int:
+    try:
+        with MarketCollector() as collector:
+            snapshot = collector.search_bazaar(args.search or "", save=not args.no_save)
+    except HypixelApiError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    except RuntimeError as exc:
+        print(f"Config error: {exc}", file=sys.stderr)
+        return 2
+
+    if args.json:
+        print(json.dumps(build_bazaar_payload(snapshot, query=args.search or "", limit=args.limit), indent=2))
+    else:
+        print(_format_bazaar(snapshot, query=args.search or "", limit=args.limit))
+    return 0
+
+
+def cmd_auctions(args: argparse.Namespace) -> int:
+    try:
+        with MarketCollector() as collector:
+            page = collector.search_auctions_page(
+                args.page,
+                args.search or "",
+                bin_only=args.bin,
+                save=not args.no_save,
+            )
+    except HypixelApiError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    except RuntimeError as exc:
+        print(f"Config error: {exc}", file=sys.stderr)
+        return 2
+
+    if args.json:
+        print(
+            json.dumps(
+                build_auctions_payload(
+                    page,
+                    query=args.search or "",
+                    bin_only=args.bin,
+                    limit=args.limit,
+                ),
+                indent=2,
+            )
+        )
+    else:
+        print(_format_auctions(page, query=args.search or "", bin_only=args.bin, limit=args.limit))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="skyblock-agent",
@@ -209,6 +324,22 @@ def build_parser() -> argparse.ArgumentParser:
     gui.add_argument("--host", default="127.0.0.1")
     gui.add_argument("--port", type=int, default=8765)
     gui.set_defaults(func=cmd_gui)
+
+    bazaar = sub.add_parser("bazaar", help="Fetch Bazaar prices and save a local snapshot")
+    bazaar.add_argument("--search", "-s", help="Filter by product id (e.g. ENCHANTED_DIAMOND)")
+    bazaar.add_argument("--limit", type=int, default=20, help="Rows to print (default: 20)")
+    bazaar.add_argument("--json", action="store_true")
+    bazaar.add_argument("--no-save", action="store_true", help="Skip writing raw JSON to data/")
+    bazaar.set_defaults(func=cmd_bazaar)
+
+    auctions = sub.add_parser("auctions", help="Fetch Auction House page and prices")
+    auctions.add_argument("--page", type=int, default=0, help="Auction page index (0-based)")
+    auctions.add_argument("--search", "-s", help="Filter item name/tier/category on this page")
+    auctions.add_argument("--bin", action="store_true", help="Show buy-it-now listings only")
+    auctions.add_argument("--limit", type=int, default=20, help="Rows to print (default: 20)")
+    auctions.add_argument("--json", action="store_true")
+    auctions.add_argument("--no-save", action="store_true", help="Skip writing raw JSON to data/")
+    auctions.set_defaults(func=cmd_auctions)
 
     return parser
 

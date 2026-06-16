@@ -6,9 +6,14 @@ from pathlib import Path
 from typing import Optional
 
 from skyblock_agent.collectors.hypixel_client import HypixelApiError
+from skyblock_agent.collectors.market_collector import MarketCollector
 from skyblock_agent.collectors.player_lookup import PlayerLookupService
 from skyblock_agent.config import is_api_key_configured
-from skyblock_agent.serializers import build_lookup_payload
+from skyblock_agent.serializers import (
+    build_auctions_payload,
+    build_bazaar_payload,
+    build_lookup_payload,
+)
 from skyblock_agent.storage.player_index import list_players
 from skyblock_agent.validation.api_recognizer import recognize_player_result
 
@@ -76,6 +81,36 @@ def create_app():
         profile: Optional[str] = Query(default=None, description="Profile cute name"),
     ) -> dict[str, object]:
         return lookup_player(username, profile)
+
+    @app.get("/api/bazaar")
+    def fetch_bazaar(
+        q: Optional[str] = Query(default=None, description="Filter by product id"),
+        limit: int = Query(default=50, ge=1, le=500),
+    ) -> dict[str, object]:
+        try:
+            with MarketCollector() as collector:
+                snapshot = collector.search_bazaar(q or "")
+            return build_bazaar_payload(snapshot, query=q or "", limit=limit)
+        except (RuntimeError, HypixelApiError) as exc:
+            raise _http_error(exc) from exc
+
+    @app.get("/api/auctions")
+    def fetch_auctions(
+        page: int = Query(default=0, ge=0),
+        q: Optional[str] = Query(default=None, description="Filter item name on this page"),
+        bin_only: bool = Query(default=False),
+        limit: int = Query(default=50, ge=1, le=1000),
+    ) -> dict[str, object]:
+        try:
+            with MarketCollector() as collector:
+                result = collector.search_auctions_page(
+                    page,
+                    q or "",
+                    bin_only=bin_only,
+                )
+            return build_auctions_payload(result, query=q or "", bin_only=bin_only, limit=limit)
+        except (RuntimeError, HypixelApiError) as exc:
+            raise _http_error(exc) from exc
 
     @app.get("/")
     def index() -> FileResponse:

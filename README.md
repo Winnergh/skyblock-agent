@@ -20,10 +20,12 @@ python -m venv .venv
 pip install -e ".[gui]"
 
 copy .env.example .env
-# Edit .env and set HYPIXEL_API_KEY (use /api new in-game)
+# Edit .env and set HYPIXEL_API_KEY from https://developer.hypixel.net/dashboard/
 
 skyblock-agent lookup <username>
 skyblock-agent lookup <username> --profile Apple
+skyblock-agent bazaar --search ENCHANTED_DIAMOND
+skyblock-agent auctions --search "Aspect of" --bin
 skyblock-agent players
 skyblock-agent gui
 ```
@@ -39,9 +41,26 @@ skyblock-agent gui
 | Selected profile | `data/raw/hypixel_api/selected_profile/{profile_id}.json` |
 | Player index | `data/processed/players/index.json` |
 
+## Bazaar & Auction House
+
+Fetch live market data from the [Hypixel Public API](https://api.hypixel.net/):
+
+| Command | Endpoint | Saved to |
+|---------|----------|----------|
+| `bazaar` | `v2/skyblock/bazaar` | `data/raw/hypixel_api/bazaar/snapshot.json` |
+| `auctions --page N` | `v2/skyblock/auctions` | `data/raw/hypixel_api/auctions/page_{N}.json` |
+
+```bash
+skyblock-agent bazaar
+skyblock-agent bazaar --search ENCHANTED_DIAMOND --json
+skyblock-agent auctions --page 0 --search "Hyperion" --bin
+```
+
+The GUI **Market** tab exposes the same data with search and pagination.
+
 ## API key
 
-Run `/api new` on Hypixel and put the key in `.env` as `HYPIXEL_API_KEY`.
+Create an Application key at [developer.hypixel.net](https://developer.hypixel.net/dashboard/) and set `HYPIXEL_API_KEY` in `.env`.
 
 ## GUI
 
